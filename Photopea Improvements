@@ -1,0 +1,86 @@
+// ==UserScript==
+// @name         Photopea Layout Enhancer
+// @namespace    http://tampermonkey.net/
+// @version      2025-07-30
+// @description  Customize Photopea layout with adjusted widths and removed elements
+// @author       You
+// @match        https://www.photopea.com/
+// @icon         https://www.google.com/s2/favicons?sz=64&domain=photopea.com
+// @grant        none
+// ==/UserScript==
+
+(function() {
+    'use strict';
+
+    // Function to apply styles and modifications
+    function applyModifications() {
+        // Set max-width for panelhead
+        const panelHead = document.querySelector("body > div.flexrow.app > div > div.flexrow > div.panelblock.mainblock > div > div.panelhead");
+        if (panelHead) {
+            panelHead.style.maxWidth = '1290px !important';
+        }
+
+        const panelBlock = document.querySelector("body > div.flexrow.app > div > div.flexrow > div.panelblock.mainblock");
+        if(panelBlock) {
+            panelBlock.style.Width = '1500px !important';
+        }
+
+        // Set width for body
+        const bodyElement = document.querySelector("body > div.flexrow.app > div > div.flexrow > div.panelblock.mainblock > div > div.body");
+        if (bodyElement) {
+            bodyElement.style.width = '1500px !important';
+        }
+
+        // Set width for third child
+        const thirdChild = document.querySelector("body > div.flexrow.app > div > div:nth-child(3)");
+        if (thirdChild) {
+            thirdChild.style.width = '1920px';
+        }
+
+        // Remove second child
+        const secondChild = document.querySelector("body > div.flexrow.app > div:nth-child(2)");
+        if (secondChild) {
+            secondChild.remove();
+        }
+        // Apply CSS for .flexrow
+        const styleId = 'flexrow-style';
+        let style = document.getElementById(styleId);
+        if (!style) {
+            style = document.createElement('style');
+            style.id = styleId;
+            style.textContent = `
+                .flexrow {
+                    justify-content: space-between !important;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    }
+
+    // Initial application of modifications
+    applyModifications();
+
+    // Set up MutationObserver to handle dynamic content
+    const observer = new MutationObserver((mutations) => {
+        // Reapply modifications on DOM changes
+        applyModifications();
+    });
+
+    // Observe changes to the body and its subtree
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+
+    // Reapply modifications every 5-10 seconds
+    function scheduleReapply() {
+        const delay = Math.random() * (10000 - 5000) + 5000; // Random delay between 5-10 seconds
+        setTimeout(() => {
+            applyModifications();
+            scheduleReapply(); // Schedule the next reapply
+        }, delay);
+    }
+
+    // Start the periodic reapply
+    scheduleReapply();
+})();
