@@ -1,0 +1,39 @@
+// ==UserScript==
+// @name         AliExpress Remove Target Blank
+// @namespace    http://tampermonkey.net/
+// @version      1.1
+// @description  Removes target="_blank" from all links on AliExpress.ru, including dynamically loaded ones
+// @author       Monard2033
+// @match        *://*.aliexpress.ru/*
+// @grant        none
+// ==/UserScript==
+
+(function() {
+    'use strict';
+
+    // Function to remove target="_blank" from all links
+    function removeTargetBlank() {
+        const links = document.querySelectorAll('a[target="_blank"]');
+        links.forEach(link => {
+            link.removeAttribute('target');
+        });
+    }
+
+    // Run initially for existing links
+    removeTargetBlank();
+
+    // Set up MutationObserver to handle dynamically added elements
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.addedNodes.length) {
+                removeTargetBlank();
+            }
+        });
+    });
+
+    // Observe changes to the DOM
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+})();
