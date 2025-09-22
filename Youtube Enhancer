@@ -215,7 +215,7 @@
             }
             #background.ytd-masthead {
                 position: fixed;
-                opacity: 0;
+                opacity: 0 !important;
                 visibility: visible;
             }
             #search-form.ytd-searchbox {
@@ -239,7 +239,7 @@
             #chips-wrapper.ytd-feed-filter-chip-bar-renderer {
                 display: none;
             }
-            .yt-spec-icon-shape {
+            .ytSpecIconShapeHost {
                 color: #c00;
             }
             ytd-feed-filter-chip-bar-renderer {
@@ -259,7 +259,7 @@
                 background-color: var(--yt-spec-badge-chip-background) !important;
                 color: var(--yt-spec-text-primary) !important;
             }
-            .yt-spec-touch-feedback-shape:not(.yt-spec-touch-feedback-shape--is-extended, .yt-spec-touch-feedback-shape--trigger-events) {
+            .yt-spec-touch-feedback-shape:where([class="yt-spec-touch-feedback-shape yt-spec-touch-feedback-shape--touch-response"]) {
                 border: 1px dotted red;
             }
             @media (prefers-color-scheme: dark) {
@@ -270,10 +270,13 @@
                 .scroll-top-btn,
                 .skip-toggle-btn,
                 .ytSearchboxComponentSearchButton,
-                .yt-spec-touch-feedback-shape,
+                .yt-spec-touch-feedback-shape:where([class="yt-spec-touch-feedback-shape yt-spec-touch-feedback-shape--touch-response"]),
                 #voice-search-button.ytd-masthead
                 {
                     background-color: var(--dark-bt) !important;
+                }
+                #content > yt-lockup-view-model > div > yt-touch-feedback-shape > div {
+                background-color: var(--dark-bt-tp) !important;
                 }
                 .yt-spec-button-shape-next--mono.yt-spec-button-shape-next--filled {
                 color: red !important;
@@ -429,27 +432,33 @@
 
             function applyWatchStyles() {
                 const viewportWidth = window.innerWidth;
-                const video_player = document.querySelector("#movie_player > div.html5-video-container > video");
-                const video_bottom = document.querySelector("#movie_player > div.ytp-chrome-bottom");
-                const player_progress = document.querySelector("#movie_player > div.ytp-chrome-bottom > div.ytp-progress-bar-container > div.ytp-progress-bar > div.ytp-chapters-container > div");
-                let maxWidthValue, position;
-                if (window.screen.width === 2560 && window.screen.height === 1440) {
-                    maxWidthValue = 2300;
-                    position = window.pageYOffset >= 4200 ? viewportWidth * 0.75 + 20 : viewportWidth * 0.55 - 30;
+                let maxWidthValuePrim,maxWidthValueCol, position;
+
+                // Linear interpolation for player window and close button
+                // At window.innerWidth = 1008px, left = 410px; at 2048px, left = 1030px
+                position = 410 + 0.596153846 * (viewportWidth - 1008);
+                position = Math.round(position); // Round to avoid subpixel rendering issues
+
+                if ((window.screen.width >= 2560 && window.screen.width <= 3840) && (window.screen.height >= 1440 && window.screen.height <= 2160)) {
+                    maxWidthValueCol = 2020;
+                    maxWidthValuePrim = 3200;
+                    position = Math.max(900, Math.min(2260, position));
+                    console.log("4K RESOLUTION ON");
                 } else {
-                    maxWidthValue = 1850;
-                    position = 0.8633 * (viewportWidth - 1035) + 80;
-                    position = Math.max(80, Math.min(854, position));
+                    maxWidthValueCol = 1850;
+                    maxWidthValuePrim = 1850;
+                    position = Math.max(410, Math.min(854, position));
+                    console.log("FHD RESOLUTION ON");
                 }
 
                 const cssRules = `
                     #primary.ytd-watch-flexy {
-                        max-width: ${maxWidthValue}px !important;
+                        max-width: ${maxWidthValuePrim}px !important;
                         margin-left: 0px !important;
                         margin-top: 12px !important;
                     }
                     #columns.ytd-watch-flexy {
-                        max-width: ${maxWidthValue}px !important;
+                        max-width: ${maxWidthValueCol}px !important;
                     }
                     body.efyt-mini-player.efyt-mini-player-top-right #movie_player:not(.ytp-fullscreen) {
                         height: 315px !important;
@@ -463,14 +472,7 @@
                         width: 3%;
                         height: 3%;
                     }
-                    ytd-watch-flexy[flexy] #player-container-outer.ytd-watch-flexy {
-                    max-width: 1360px;
-                    max-height: 860px;
                 `;
-                //video_player.style.width = '1365px';
-                //video_player.style.height = '1065px';
-                //video_bottom.style.width = '1345px';
-                //player_progress.style.width = '1336px';
                 let pageStyles = document.querySelector('style[data-page-styles]');
                 if (!pageStyles) {
                     pageStyles = document.createElement('style');
@@ -501,7 +503,7 @@
                     toggleButton.className = 'skip-toggle-btn';
 
                     const touchFeedbackShape = document.createElement('div');
-                    touchFeedbackShape.className = 'yt-spec-touch-feedback-shape';
+                    touchFeedbackShape.className = 'yt-spec-touch-feedback-shape yt-spec-touch-feedback-shape--touch-response';
                     toggleButton.appendChild(touchFeedbackShape);
 
                     const icon = document.createElement('span');
@@ -774,15 +776,24 @@
                 const updatePosition = () => {
                     const viewportWidth = window.innerWidth;
                     let buttonPosition;
-                    if (window.screen.width === 2560 && window.screen.height === 1440) {
-                        buttonPosition = 0.904 * (viewportWidth - 1035) + 544;
+
+                    // Linear interpolation for button
+                    // At window.innerWidth = 1008px, left = 930px; at 2048px, left = 1536px
+                    buttonPosition = 930 + 0.583653846 * (viewportWidth - 1008);
+                    buttonPosition = Math.round(buttonPosition); // Round to avoid subpixel rendering issues
+
+                    // Preserve resolution-based clamping
+                    if ((window.screen.width >= 2560 && window.screen.width <= 3840) &&
+                        (window.screen.height >= 1440 && window.screen.height <= 2160)) {
+                        buttonPosition = Math.max(900, Math.min(2660, buttonPosition));
+                        console.log("4K RESOLUTION ON");
                     } else {
-                        buttonPosition = 0.904 * (viewportWidth - 1035) + 544;
+                        buttonPosition = Math.max(900, Math.min(1350, buttonPosition));
+                        console.log("FHD RESOLUTION ON");
                     }
-                    buttonPosition = Math.max(544, Math.min(1344, buttonPosition));
+
                     scrollTopContainer.style.left = `${buttonPosition}px`;
                 };
-                updatePosition();
 
                 scrollToTopBtn.addEventListener('click', () => {
                     window.scrollTo({
