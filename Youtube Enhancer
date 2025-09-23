@@ -435,12 +435,12 @@
                 let maxWidthValuePrim,maxWidthValueCol, position;
 
                 // Linear interpolation for player window and close button
-                // At window.innerWidth = 1008px, left = 410px; at 2048px, left = 1030px
-                position = 410 + 0.596153846 * (viewportWidth - 1008);
+                // At window.innerWidth = 1009px, left = 400px; at 2560px, left = 1500px
+                position = 400 + 0.709542875 * (viewportWidth - 1009);
                 position = Math.round(position); // Round to avoid subpixel rendering issues
 
                 if ((window.screen.width >= 2560 && window.screen.width <= 3840) && (window.screen.height >= 1440 && window.screen.height <= 2160)) {
-                    maxWidthValueCol = 2020;
+                    maxWidthValueCol = 2420;
                     maxWidthValuePrim = 3200;
                     position = Math.max(900, Math.min(2260, position));
                     console.log("4K RESOLUTION ON");
@@ -778,8 +778,8 @@
                     let buttonPosition;
 
                     // Linear interpolation for button
-                    // At window.innerWidth = 1008px, left = 930px; at 2048px, left = 1536px
-                    buttonPosition = 930 + 0.583653846 * (viewportWidth - 1008);
+                    // At window.innerWidth = 1009px, left = 592px; at 2560px, left = 1992px
+                    buttonPosition = 592 + 0.902642811 * (viewportWidth - 1009);
                     buttonPosition = Math.round(buttonPosition); // Round to avoid subpixel rendering issues
 
                     // Preserve resolution-based clamping
