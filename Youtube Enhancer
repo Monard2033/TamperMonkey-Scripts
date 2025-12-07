@@ -5,7 +5,7 @@
 // @description  try to take over the world!
 // @author       You
 // @match        https://www.youtube.com/*
-// @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
+// @icon         https://www.google.com/s2/favicons?sz=64&domain=youtube.com
 // @grant        none
 // ==/UserScript==
 
@@ -57,20 +57,20 @@
 
         function waitForDOMElement(selector, callback, options = {}) {
             const { interval = 100, timeout = 15000, delay = 0 } = options;
-                const startTime = Date.now();
-                const checkElement = () => {
-                    const element = document.querySelector(selector);
-                    if (element) {
-                        callback(element);
-                    } else if (Date.now() - startTime < timeout) {
-                        setTimeout(checkElement, interval);
-                    }
-                };
-                if (delay > 0) {
-                    setTimeout(checkElement, delay);
-                } else {
-                    checkElement();
+            const startTime = Date.now();
+            const checkElement = () => {
+                const element = document.querySelector(selector);
+                if (element) {
+                    callback(element);
+                } else if (Date.now() - startTime < timeout) {
+                    setTimeout(checkElement, interval);
                 }
+            };
+            if (delay > 0) {
+                setTimeout(checkElement, delay);
+            } else {
+                checkElement();
+            }
         }
 
         function waitForAllDOMElements(selectors, options = {}) {
@@ -159,6 +159,7 @@
     const Styles = (function () {
         const styleElement = document.createElement('style');
         document.head.appendChild(styleElement);
+        // Update the stylesheet
         styleElement.textContent = `
             :root {
                 --dark-bt: rgb(200 200 200 / 15%);
@@ -195,6 +196,15 @@
                 margin: auto;
                 flex: 0 0 550px;
             }
+            .ytp-delhi-modern.ytp-big-mode:not(.ytp-xsmall-width-mode) .ytp-chrome-bottom {
+               height: 80px !important;
+            }
+            .ytp-big-mode .ytp-progress-bar-container {
+                bottom: 65.5px !important;
+            }
+            ytd-rich-grid-renderer {
+            --ytd-rich-grid-items-per-row: 4 !important;
+            }
             #container.ytd-masthead {
                 box-shadow: none;
                 background: transparent;
@@ -203,6 +213,9 @@
                 z-index: 1000;
                 justify-content: space-evenly;
             }
+            #contents.ytd-rich-grid-renderer {
+                padding-top: 65px;
+            }
             ytd-watch-flexy[flexy] #secondary.ytd-watch-flexy {
                 min-width: 450px;
                 padding-right: 0px;
@@ -210,13 +223,16 @@
             .ytSearchboxComponentSearchButton {
                 background: transparent;
                 border: 1px dotted red;
-                background-color: var(--light-bt);
+                background-color: var(--light-bt) !important;
                 height: 52px;
             }
             #background.ytd-masthead {
                 position: fixed;
-                opacity: 0 !important;
+                opacity: 0;
                 visibility: visible;
+                background: transparent;
+                height: 56px;
+                z-index -1;
             }
             #search-form.ytd-searchbox {
                 height: 50px;
@@ -237,7 +253,7 @@
                 background-color: var(--light-bt) !important;
             }
             #chips-wrapper.ytd-feed-filter-chip-bar-renderer {
-                display: none;
+                opacity: 0.6;
             }
             .ytSpecIconShapeHost {
                 color: #c00;
@@ -246,18 +262,19 @@
                 height: 0;
             }
             #frosted-glass.with-chipbar.ytd-app {
-                display: none;
+                height: 112px !important;
+                backdrop-filter: blur(2px) !important;
             }
             .yt-core-attributed-string--white-space-no-wrap {
-                color: #c00 !important;
+                color: #c00;
             }
             .yt-spec-button-shape-next--mono.yt-spec-button-shape-next--filled {
-                background: none !important;
-                color:black !important;
+                background: none;
+                color:black;
             }
             yt-chip-cloud-chip-renderer[chip-style=STYLE_DEFAULT][selected] #chip-container.yt-chip-cloud-chip-renderer {
-                background-color: var(--yt-spec-badge-chip-background) !important;
-                color: var(--yt-spec-text-primary) !important;
+                background-color: var(--yt-spec-badge-chip-background);
+                color: var(--yt-spec-text-primary);
             }
             .yt-spec-touch-feedback-shape:where([class="yt-spec-touch-feedback-shape yt-spec-touch-feedback-shape--touch-response"]) {
                 border: 1px dotted red;
@@ -276,10 +293,10 @@
                     background-color: var(--dark-bt) !important;
                 }
                 #content > yt-lockup-view-model > div > yt-touch-feedback-shape > div {
-                background-color: var(--dark-bt-tp) !important;
+                background-color: var(--dark-bt-tp);
                 }
                 .yt-spec-button-shape-next--mono.yt-spec-button-shape-next--filled {
-                color: red !important;
+                color: red;
                 }
                 #start.ytd-masthead:hover,
                 .ytSearchboxComponentInputBox:hover,
@@ -339,7 +356,7 @@
                 align-items: center;
             }
             .skip-toggle-btn:hover {
-                background-color: var(--light-bt-hover);
+                background-color: var(--light-bt-hover) !important;
             }
             .toggle-icon {
                 display: flex;
@@ -403,7 +420,7 @@
                             cache.center.style.flex = `0 0 ${centerFlexBasis}px`;
                         }
                     })
-                    .catch(() => {});
+                    .catch(() => { });
             } else {
                 // Use cached masthead elements
                 const windowWidth = window.innerWidth;
@@ -432,29 +449,32 @@
 
             function applyWatchStyles() {
                 const viewportWidth = window.innerWidth;
-                let maxWidthValuePrim,maxWidthValueCol, position;
+                const viewportHeight = window.innerHeight;
+                const TOP_BAR_HEIGHT_PX = 56;
+                const topBarHeightVh = (TOP_BAR_HEIGHT_PX / viewportHeight) * 100;
+                const availableHeightVh = 100 - topBarHeightVh;
+                const maxHeightFromAspectRatioVh = (viewportWidth / viewportHeight) * (9 / 16) * 100;
+                const finalMaxHeightVh = Math.min(availableHeightVh, maxHeightFromAspectRatioVh);
+                const heightVh = finalMaxHeightVh.toFixed(4);
 
-                // Linear interpolation for player window and close button
-                // At window.innerWidth = 1009px, left = 400px; at 2560px, left = 1500px
-                position = 400 + 0.709542875 * (viewportWidth - 1009);
-                position = Math.round(position); // Round to avoid subpixel rendering issues
 
+                let maxWidthValuePrim, maxWidthValueCol, position;
                 if ((window.screen.width >= 2560 && window.screen.width <= 3840) && (window.screen.height >= 1440 && window.screen.height <= 2160)) {
-                    maxWidthValueCol = 2420;
-                    maxWidthValuePrim = 3200;
-                    position = Math.max(900, Math.min(2260, position));
-                    console.log("4K RESOLUTION ON");
+                    maxWidthValueCol = 3600;
+                    maxWidthValuePrim = 3300;
+                    position = 0.769 * (viewportWidth - 900) + 900;
+                    position = Math.max(900, Math.min(2660, position));
                 } else {
-                    maxWidthValueCol = 1850;
+                    maxWidthValueCol = 2065;
                     maxWidthValuePrim = 1850;
+                    position = 0.8633 * (viewportWidth - 1035) + 80;
                     position = Math.max(410, Math.min(854, position));
-                    console.log("FHD RESOLUTION ON");
                 }
 
                 const cssRules = `
                     #primary.ytd-watch-flexy {
                         max-width: ${maxWidthValuePrim}px !important;
-                        margin-left: 0px !important;
+                        margin-left: 15px !important;
                         margin-top: 12px !important;
                     }
                     #columns.ytd-watch-flexy {
@@ -471,6 +491,18 @@
                         left: ${position}px !important;
                         width: 3%;
                         height: 3%;
+                    }
+                    ytd-watch-flexy[full-bleed-player][respect-aspect-ratio]:not([fullscreen]) #full-bleed-container.ytd-watch-flexy,
+                    ytd-watch-flexy[full-bleed-player] #full-bleed-container.ytd-watch-flexy {
+                        height: ${heightVh}vh !important;
+                        max-height: ${heightVh}vh !important;
+                    }
+                    .html5-video-player .video-stream {
+                        max-height: ${heightVh}vh !important;
+                    }
+                    ytd-watch-flexy[full-bleed-player] #player-container.ytd-watch-flexy,
+                    ytd-watch-flexy[full-bleed-player] #player.ytd-watch-flexy {
+                        max-height: ${heightVh}vh !important;
                     }
                 `;
                 let pageStyles = document.querySelector('style[data-page-styles]');
@@ -555,120 +587,108 @@
         }
 
         function SkippingShortsMechanism() {
-    if (Core.utils.checkIfShortsPage()) {
-        const currentShortsId = Core.utils.getShortsId();
-        if (currentShortsId === Core.state.lastProcessedShortsId && Core.state.observer && currentShortsId === Core.state.observerShortsId) {
-            // Verify if observer is capturing progress bar
-            const progressBarElement = document.querySelector('#scrubber > desktop-shorts-player-controls > div > yt-progress-bar > div');
-            if (progressBarElement && Core.state.observer) {
-                const ariaValueText = progressBarElement.getAttribute('aria-valuetext');
-                if (!ariaValueText || parseFloat(ariaValueText.replace('%', '')) === 0) {
-                    // Progress bar not updating, force reinitialization
+            if (Core.utils.checkIfShortsPage()) {
+                const currentShortsId = Core.utils.getShortsId();
+                if (currentShortsId === Core.state.lastProcessedShortsId && Core.state.observer && currentShortsId === Core.state.observerShortsId) {
+                    // Verify if observer is capturing progress bar
+                    const progressBarElement = document.querySelector('#scrubber > desktop-shorts-player-controls > div > yt-progress-bar > div');
+                    if (progressBarElement && Core.state.observer) {
+                        const ariaValueText = progressBarElement.getAttribute('aria-valuetext');
+                        if (!ariaValueText || parseFloat(ariaValueText.replace('%', '')) === 0) {
+                            // Progress bar not updating, force reinitialization
+                            Core.state.observer.disconnect();
+                            Core.state.observer = null;
+                            Core.state.observerShortsId = null;
+                        } else {
+                            return; // Observer is working, no need to reinitialize
+                        }
+                    }
+                }
+                Core.state.isClicked = false;
+                Core.state.lastProcessedShortsId = currentShortsId;
+
+                // Disconnect existing observer immediately
+                if (Core.state.observer) {
                     Core.state.observer.disconnect();
                     Core.state.observer = null;
                     Core.state.observerShortsId = null;
-                } else {
-                    return; // Observer is working, no need to reinitialize
                 }
-            }
-        }
-        Core.state.isClicked = false;
-        Core.state.lastProcessedShortsId = currentShortsId;
 
-        // Disconnect existing observer immediately
-        if (Core.state.observer) {
-            Core.state.observer.disconnect();
-            Core.state.observer = null;
-            Core.state.observerShortsId = null;
-        }
+                const selectors = [
+                    '#navigation-button-down > ytd-button-renderer > yt-button-shape > button',
+                    '#scrubber > desktop-shorts-player-controls > div > yt-progress-bar > div'
+                ];
 
-        const selectors = [
-            '#navigation-button-down > ytd-button-renderer > yt-button-shape > button',
-            '#scrubber > desktop-shorts-player-controls > div > yt-progress-bar > div'
-        ];
+                // Function to initialize observer for the progress bar
+                function initializeObserver(progressBarElement, navButton) {
+                    let maxWidth = 0;
+                    let previousWidth = 0;
+                    let mutationCount = 0;
+                    let lastMutationTime = Date.now();
 
-        // Function to initialize observer for the progress bar
-        function initializeObserver(progressBarElement, navButton) {
-            let maxWidth = 0;
-            let previousWidth = 0;
-            let mutationCount = 0;
-            let lastMutationTime = Date.now();
+                    Core.state.observer = new MutationObserver(mutations => {
+                        mutationCount++;
+                        lastMutationTime = Date.now();
+                        mutations.forEach(mutation => {
+                            if (mutation.attributeName === 'aria-valuetext' && Core.state.isSkippingEnabled) {
+                                // Revalidate progress bar element
+                                let currentProgressBar = document.querySelector('#scrubber > desktop-shorts-player-controls > div > yt-progress-bar > div');
+                                if (!currentProgressBar || currentProgressBar !== progressBarElement) {
+                                    // Progress bar is stale, reinitialize
+                                    Core.state.observer.disconnect();
+                                    Core.state.observer = null;
+                                    Core.state.observerShortsId = null;
+                                    attemptObserverSetup(navButton);
+                                    return;
+                                }
 
-            Core.state.observer = new MutationObserver(mutations => {
-                mutationCount++;
-                lastMutationTime = Date.now();
-                mutations.forEach(mutation => {
-                    if (mutation.attributeName === 'aria-valuetext' && Core.state.isSkippingEnabled) {
-                        // Revalidate progress bar element
-                        let currentProgressBar = document.querySelector('#scrubber > desktop-shorts-player-controls > div > yt-progress-bar > div');
-                        if (!currentProgressBar || currentProgressBar !== progressBarElement) {
-                            // Progress bar is stale, reinitialize
+                                let ariaValueText = progressBarElement.getAttribute('aria-valuetext');
+                                if (ariaValueText) {
+                                    let widthNumber = parseFloat(ariaValueText.replace('%', ''));
+                                    console.log("WN:", widthNumber);
+                                    if (widthNumber >= maxWidth) {
+                                        maxWidth = widthNumber;
+                                        previousWidth = widthNumber;
+                                    } else if (!Core.state.isClicked) {
+                                        if ((widthNumber === 0 || widthNumber === 1) && previousWidth >= 97) {
+                                            Core.utils.pauseVideo();
+                                            Core.state.navigationButtonDown.click();
+                                            Core.state.isClicked = true;
+                                            Core.state.observer.disconnect();
+                                            Core.state.observer = null;
+                                            Core.state.observerShortsId = null;
+                                            maxWidth = 0;
+                                            previousWidth = 0;
+                                        } else {
+                                            previousWidth = widthNumber;
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    });
+
+                    Core.state.observer.observe(progressBarElement, {
+                        attributes: true,
+                        attributeFilter: ['aria-valuetext'],
+                    });
+                    Core.state.observerShortsId = currentShortsId;
+
+                    // Monitor if observer is capturing updates
+                    setTimeout(() => {
+                        if (Date.now() - lastMutationTime > 2000 && Core.state.observer && Core.state.observerShortsId === currentShortsId) {
+                            console.warn("Observer not capturing progress bar, reinitializing...");
                             Core.state.observer.disconnect();
                             Core.state.observer = null;
                             Core.state.observerShortsId = null;
                             attemptObserverSetup(navButton);
-                            return;
                         }
-
-                        let ariaValueText = progressBarElement.getAttribute('aria-valuetext');
-                        if (ariaValueText) {
-                            let widthNumber = parseFloat(ariaValueText.replace('%', ''));
-                            console.log("WN:", widthNumber);
-                            if (widthNumber >= maxWidth) {
-                                maxWidth = widthNumber;
-                                previousWidth = widthNumber;
-                            } else if (!Core.state.isClicked) {
-                                if ((widthNumber === 0 || widthNumber === 1) && previousWidth >= 97) {
-                                    Core.utils.pauseVideo();
-                                    Core.state.navigationButtonDown.click();
-                                    Core.state.isClicked = true;
-                                    Core.state.observer.disconnect();
-                                    Core.state.observer = null;
-                                    Core.state.observerShortsId = null;
-                                    maxWidth = 0;
-                                    previousWidth = 0;
-                                } else {
-                                    previousWidth = widthNumber;
-                                }
-                            }
-                        }
-                    }
-                });
-            });
-
-            Core.state.observer.observe(progressBarElement, {
-                attributes: true,
-                attributeFilter: ['aria-valuetext'],
-            });
-            Core.state.observerShortsId = currentShortsId;
-
-            // Monitor if observer is capturing updates
-            setTimeout(() => {
-                if (Date.now() - lastMutationTime > 2000 && Core.state.observer && Core.state.observerShortsId === currentShortsId) {
-                    console.warn("Observer not capturing progress bar, reinitializing...");
-                    Core.state.observer.disconnect();
-                    Core.state.observer = null;
-                    Core.state.observerShortsId = null;
-                    attemptObserverSetup(navButton);
+                    }, 2500); // Check after 2.5s
                 }
-            }, 2500); // Check after 2.5s
-        }
 
-        // Function to attempt observer setup with polling
-        function attemptObserverSetup(navButton) {
-            const progressBarSelector = '#scrubber > desktop-shorts-player-controls > div > yt-progress-bar > div';
-            Core.utils.waitForDOMElement(
-                progressBarSelector,
-                progressBarElement => {
-                    if (progressBarElement) {
-                        initializeObserver(progressBarElement, navButton);
-                    }
-                },
-                { interval: 50, timeout: 5000 } // Fast polling, 5s timeout
-            ).catch(err => {
-                console.error(`Failed to find progress bar: ${err.message}`);
-                // Retry once after a delay if initial attempt fails
-                setTimeout(() => {
+                // Function to attempt observer setup with polling
+                function attemptObserverSetup(navButton) {
+                    const progressBarSelector = '#scrubber > desktop-shorts-player-controls > div > yt-progress-bar > div';
                     Core.utils.waitForDOMElement(
                         progressBarSelector,
                         progressBarElement => {
@@ -676,38 +696,50 @@
                                 initializeObserver(progressBarElement, navButton);
                             }
                         },
-                        { interval: 50, timeout: 3000 }
-                    ).catch(err => console.error(`Retry failed: ${err.message}`));
-                }, 1000);
-            });
-        }
-
-        Core.utils.waitForAllDOMElements(selectors, { timeout: 10000, maxRetries: 3 })
-            .then(results => {
-                const navButton = results[selectors[0]].element;
-                const progressBarElement = results[selectors[1]].element;
-
-                if (!Core.state.hasNavigationButtonBeenFetched) {
-                    Core.state.navigationButtonDown = navButton;
-                    Core.state.hasNavigationButtonBeenFetched = true;
-
-                    Core.state.navigationButtonDown.addEventListener('click', function observerReinitHandler(e) {
-                        if (!e.isTrusted) return;
-                        Core.state.navigationButtonDown.removeEventListener('click', observerReinitHandler);
-                        if (Core.state.observer) {
-                            Core.state.observer.disconnect();
-                            Core.state.observer = null;
-                            Core.state.observerShortsId = null;
-                        }
-                        attemptObserverSetup(navButton);
+                        { interval: 50, timeout: 5000 } // Fast polling, 5s timeout
+                    ).catch(err => {
+                        console.error(`Failed to find progress bar: ${err.message}`);
+                        // Retry once after a delay if initial attempt fails
+                        setTimeout(() => {
+                            Core.utils.waitForDOMElement(
+                                progressBarSelector,
+                                progressBarElement => {
+                                    if (progressBarElement) {
+                                        initializeObserver(progressBarElement, navButton);
+                                    }
+                                },
+                                { interval: 50, timeout: 3000 }
+                            ).catch(err => console.error(`Retry failed: ${err.message}`));
+                        }, 1000);
                     });
                 }
 
-                attemptObserverSetup(navButton);
-            })
-            .catch(err => console.error(`waitForAllDOMElements failed: ${err.message}`));
-    }
-}
+                Core.utils.waitForAllDOMElements(selectors, { timeout: 10000, maxRetries: 3 })
+                    .then(results => {
+                        const navButton = results[selectors[0]].element;
+                        const progressBarElement = results[selectors[1]].element;
+
+                        if (!Core.state.hasNavigationButtonBeenFetched) {
+                            Core.state.navigationButtonDown = navButton;
+                            Core.state.hasNavigationButtonBeenFetched = true;
+
+                            Core.state.navigationButtonDown.addEventListener('click', function observerReinitHandler(e) {
+                                if (!e.isTrusted) return;
+                                Core.state.navigationButtonDown.removeEventListener('click', observerReinitHandler);
+                                if (Core.state.observer) {
+                                    Core.state.observer.disconnect();
+                                    Core.state.observer = null;
+                                    Core.state.observerShortsId = null;
+                                }
+                                attemptObserverSetup(navButton);
+                            });
+                        }
+
+                        attemptObserverSetup(navButton);
+                    })
+                    .catch(err => console.error(`waitForAllDOMElements failed: ${err.message}`));
+            }
+        }
         function handleKeyEvent(event) {
             if (!Core.utils.checkIfShortsPage()) return;
             const now = Date.now();
@@ -776,24 +808,16 @@
                 const updatePosition = () => {
                     const viewportWidth = window.innerWidth;
                     let buttonPosition;
-
-                    // Linear interpolation for button
-                    // At window.innerWidth = 1009px, left = 592px; at 2560px, left = 1992px
-                    buttonPosition = 592 + 0.902642811 * (viewportWidth - 1009);
-                    buttonPosition = Math.round(buttonPosition); // Round to avoid subpixel rendering issues
-
-                    // Preserve resolution-based clamping
-                    if ((window.screen.width >= 2560 && window.screen.width <= 3840) &&
-                        (window.screen.height >= 1440 && window.screen.height <= 2160)) {
-                        buttonPosition = Math.max(900, Math.min(2660, buttonPosition));
-                        console.log("4K RESOLUTION ON");
+                    if ((window.screen.width >= 2560 && window.screen.width <= 3840) && (window.screen.height >= 1440 && window.screen.height <= 2160)) {
+                        buttonPosition = 0.769 * (viewportWidth - 900) + 900;
+                        buttonPosition = Math.max(900, Math.min(3160, buttonPosition));
                     } else {
-                        buttonPosition = Math.max(900, Math.min(1350, buttonPosition));
-                        console.log("FHD RESOLUTION ON");
+                        buttonPosition = 0.904 * (viewportWidth - 1035) + 600;
+                        buttonPosition = Math.max(600, Math.min(1800, buttonPosition));
                     }
-
                     scrollTopContainer.style.left = `${buttonPosition}px`;
                 };
+                updatePosition();
 
                 scrollToTopBtn.addEventListener('click', () => {
                     window.scrollTo({
@@ -836,7 +860,18 @@
 
     // MainPage Module: Placeholder for main page logic
     const MainPage = (function () {
-        return {};
+        const { utils, cache } = Core;
+    function updateGrid() {
+        const selector = '#primary > ytd-rich-grid-renderer';
+        utils.waitForDOMElement(selector, (gridRenderer) => {
+            gridRenderer.style.setProperty('--ytd-rich-grid-items-per-row', '4' , '!important');
+        }, {
+            interval: 200,
+            timeout: 20000,
+            delay: 500
+        });
+    }
+        return {updateGrid};
     })();
 
     // Navigation Module: URL-based navigation and event handling
@@ -896,6 +931,7 @@
                     state.lastProcessedShortsId = null;
                 }
                 Layout.updateLayout();
+
             }
         }
 
@@ -935,25 +971,14 @@
         }
     }, 30));
 
-    window.addEventListener('load', () => {
-        Layout.updateLayout();
-        Navigation.handleNavigationChange();
-    });
-
     window.addEventListener('popstate', () => {
         Layout.updateLayout();
         Navigation.handleNavigationChange();
     });
-
-    window.addEventListener('DOMContentLoaded', () => {
-        Navigation.handleNavigationChange();
-    });
+    MainPage.updateGrid();
 
     const titleObserver = new MutationObserver(Core.utils.debounce(() => {
         Navigation.handleNavigationChange();
-    }, 100));
+    }, 80));
     titleObserver.observe(document.querySelector('title'), { childList: true });
-
-    Layout.updateLayout();
-    Navigation.handleNavigationChange();
 })();
